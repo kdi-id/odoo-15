@@ -40,6 +40,9 @@ package-lock.json
 package.json
 .husky
 
+# runtime data
+/data/
+
 # various virtualenv
 /bin/
 /build/

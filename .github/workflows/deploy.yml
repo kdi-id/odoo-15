@@ -1,0 +1,51 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            # Set up SSH agent for enterprise repo access
+            eval "$(ssh-agent -s)"
+            echo "${{ secrets.ENTERPRISE_DEPLOY_KEY }}" | ssh-add -
+            ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+            # Pull community addons
+            cd /opt/odoo/odoo-15
+            sudo -u odoo git pull origin main
+
+            # Pull enterprise addons (clone if first time)
+            if [ -d /opt/odoo/enterprise-15 ]; then
+              cd /opt/odoo/enterprise-15
+              sudo -u odoo git pull origin 15.0
+            else
+              sudo -u odoo git clone --branch 15.0 --depth 1 git@github.com:odoo/enterprise.git /opt/odoo/enterprise-15
+            fi
+
+            # Install any new Python dependencies
+            sudo -u odoo /opt/odoo/venv/bin/pip install -q -r /opt/odoo/odoo-15/requirements.txt
+
+            # Restart Odoo
+            sudo systemctl restart odoo
+
+            # Wait and verify Odoo is running
+            sleep 5
+            if systemctl is-active --quiet odoo; then
+              echo "Odoo restarted successfully"
+            else
+              echo "Odoo failed to start"
+              sudo journalctl -u odoo --no-pager -n 20
+              exit 1
+            fi
