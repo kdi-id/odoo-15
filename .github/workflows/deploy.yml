@@ -28,7 +28,7 @@ jobs:
 
             # Pull enterprise addons (clone if first time)
             GIT_SSH='ssh -i /opt/odoo/.ssh/deploy_key -o StrictHostKeyChecking=no'
-            if [ -d /opt/odoo/enterprise-15 ]; then
+            if sudo -u odoo test -d /opt/odoo/enterprise-15; then
               sudo -u odoo bash -c "export GIT_SSH_COMMAND='$GIT_SSH' && cd /opt/odoo/enterprise-15 && git pull origin 15.0"
             else
               sudo -u odoo bash -c "export GIT_SSH_COMMAND='$GIT_SSH' && git clone --branch 15.0 --depth 1 git@github.com:odoo/enterprise.git /opt/odoo/enterprise-15"
