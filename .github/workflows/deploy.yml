@@ -37,8 +37,8 @@ jobs:
             # Clean up deploy key
             sudo rm -f /opt/odoo/.ssh/deploy_key
 
-            # Install any new Python dependencies
-            sudo -u odoo /opt/odoo/venv/bin/pip install -q -r /opt/odoo/odoo-15/requirements.txt
+            # Install any new Python dependencies (skip already-installed)
+            sudo -u odoo /opt/odoo/venv/bin/pip install -q --no-deps -r /opt/odoo/odoo-15/requirements.txt 2>/dev/null || true
 
             # Restart Odoo
             sudo systemctl restart odoo
