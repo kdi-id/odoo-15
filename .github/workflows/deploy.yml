@@ -17,21 +17,21 @@ jobs:
           script: |
             set -e
 
-            # Set up SSH for odoo user (enterprise repo access)
-            sudo -u odoo ssh-keyscan github.com >> /opt/odoo/.ssh/known_hosts 2>/dev/null
-            echo "${{ secrets.ENTERPRISE_DEPLOY_KEY }}" | sudo tee /opt/odoo/.ssh/deploy_key > /dev/null
-            sudo chown odoo:odoo /opt/odoo/.ssh/deploy_key
+            # Set up SSH for enterprise repo access
+            sudo bash -c 'ssh-keyscan github.com >> /opt/odoo/.ssh/known_hosts 2>/dev/null'
+            sudo bash -c 'echo "$0" > /opt/odoo/.ssh/deploy_key' "${{ secrets.ENTERPRISE_DEPLOY_KEY }}"
+            sudo chown odoo:odoo /opt/odoo/.ssh/deploy_key /opt/odoo/.ssh/known_hosts
             sudo chmod 600 /opt/odoo/.ssh/deploy_key
 
             # Pull community addons
             sudo -u odoo bash -c 'cd /opt/odoo/odoo-15 && git pull origin main'
 
             # Pull enterprise addons (clone if first time)
-            export GIT_SSH_COMMAND='ssh -i /opt/odoo/.ssh/deploy_key -o StrictHostKeyChecking=no'
+            GIT_SSH='ssh -i /opt/odoo/.ssh/deploy_key -o StrictHostKeyChecking=no'
             if [ -d /opt/odoo/enterprise-15 ]; then
-              sudo -u odoo bash -c "GIT_SSH_COMMAND='$GIT_SSH_COMMAND' cd /opt/odoo/enterprise-15 && git pull origin 15.0"
+              sudo -u odoo bash -c "export GIT_SSH_COMMAND='$GIT_SSH' && cd /opt/odoo/enterprise-15 && git pull origin 15.0"
             else
-              sudo -u odoo bash -c "GIT_SSH_COMMAND='$GIT_SSH_COMMAND' git clone --branch 15.0 --depth 1 git@github.com:odoo/enterprise.git /opt/odoo/enterprise-15"
+              sudo -u odoo bash -c "export GIT_SSH_COMMAND='$GIT_SSH' && git clone --branch 15.0 --depth 1 git@github.com:odoo/enterprise.git /opt/odoo/enterprise-15"
             fi
 
             # Clean up deploy key
